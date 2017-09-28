@@ -2,3 +2,5 @@
 validate
 tan
 *.dSYM
+src/Parser/lex.yy.cc
+src/pddl+.cpp
