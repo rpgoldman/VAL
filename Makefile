@@ -62,7 +62,8 @@ YACC	?= bison
 	${CXX} ${CPPFLAGS} ${CXXFLAGS} -c $< -o $@
 
 %.cpp : %.yacc
-	${LEX} -+ src/Parser/pddl+.lex -o /src/Parser/lex.yy.cc; ${YACC} $< -o src/pddl+.cpp
+	${LEX} -o src/Parser/lex.yy.cc -+ src/Parser/pddl+.lex 
+	${YACC} -o src/pddl+.cpp $<
 
 # validate
 
