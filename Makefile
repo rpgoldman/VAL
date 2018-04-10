@@ -298,6 +298,10 @@ MM_ALL_TARGETS := validate parser analyse tan tim tofn instantiate libInst.a typ
 .PHONY : all
 all:: ${MM_ALL_TARGETS}
 
+.PHONY: install
+install: ${MM_ALL_TARGETS}
+	install ${MM_ALL_TARGETS} /usr/local/bin
+
 # target for removing all object files
 
 .PHONY : tidy
