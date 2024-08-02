@@ -89,6 +89,8 @@ bool ContinueAnyway;
 bool ErrorReport;
 bool InvariantWarnings;
 bool LaTeX;
+  bool failOnBadPlan; // keep default behavior
+
 
 ostream * report = &cout;
 
@@ -116,6 +118,7 @@ void usage()
 		     << "    -rd <x>    -- Set distribution for robustness testing: x = u, uniform; x = n, normal; x = p, psuedo-normal. (default x = u).\n"
 		     << "    -j         -- When varying the values of PNEs also vary for event preconditions. (default = false)\n"
 		     << "    -v         -- Verbose reporting of plan check progress.\n"
+                     << "    -x         -- Fail with non-zero exit code if plan fails to parse.\n"
 		     << "    -l         -- Verbose LaTeX reporting of plan check progress.\n"
 		     << "    -a         -- Do not output plan repair advice when Verbose is on.\n"
 		     << "    -g         -- Use graphplan length where no metric specified.\n"
@@ -150,13 +153,18 @@ plan * getPlan(int & argc,char * argv[],int & argcount,TypeChecker & tc,vector<s
 
 	    ifstream planFile(argv[argcount++]);
 	    if(!planFile)
-	    {
-	    	failed.push_back(name);
-	    	*report << "Bad plan file!\n";
-	    	the_plan = 0; return the_plan;
-	    };
+            {
+                failed.push_back(name);
+                *report << "Bad plan file!\n";
+                the_plan = 0;
+                if ( VAL::failOnBadPlan ) {
+                  exit(2);
+                } else {
+                  return the_plan;
+                }
+            };
 
-	    yfl = new yyFlexLexer(&planFile,&cout);
+            yfl = new yyFlexLexer(&planFile,&cout);
 	    yyparse();
 	    delete yfl;
 
@@ -166,14 +174,18 @@ plan * getPlan(int & argc,char * argv[],int & argcount,TypeChecker & tc,vector<s
 	    {
 	    	failed.push_back(name);
 
-	    	if(Silent < 2) *report << "Bad plan description!\n";
-	    	if(Silent > 1) *report << "failed\n";
-	    	delete the_plan;
-	    	the_plan = 0; return the_plan;
-	    };
+                if(Silent < 2) *report << "Bad plan description!\n";
+                if(Silent > 1) *report << "failed\n";
+                delete the_plan;
+                the_plan = 0;
+                if ( VAL::failOnBadPlan ) {
+                  exit(1);
+                  } else {
+                  return the_plan;
+                }
+            };
 
-		if(the_plan->getTime() >= 0) {name += " - Planner run time: "; name += toString(the_plan->getTime());};
-
+                if(the_plan->getTime() >= 0) {name += " - Planner run time: "; name += toString(the_plan->getTime());};
     return the_plan;
 
 };
@@ -605,6 +617,7 @@ int main(int argc,char * argv[])
 	stepLengthDefault = false;
    bool CheckDPs = true;
    bool giveAdvice = true;
+   VAL::failOnBadPlan = false; // keep default behavior
 
 	double tolerance = 0.01;
 	bool lengthDefault = true;
@@ -804,21 +817,26 @@ int main(int argc,char * argv[])
 		  ++argcount;
 		  break;
 	    	case 'a':
-	    		giveAdvice = false;
- 	    		++argcount;
-	    		break;
-	    	case 'f':
-	    		{
-	    			LaTeX = true;
-	    			Verbose = true;
-		    		++argcount;
-		    		string s(argv[argcount]);
-		    		s += ".tex";
-		    		possibleLatexReport.open(s.c_str());
-		    		report = &possibleLatexReport;
-		    		++argcount;
-	    		};
-	    		break;
+                        giveAdvice = false;
+                        ++argcount;
+                        break;
+                case 'x':
+                        failOnBadPlan = true;
+                        ++argcount;
+                        break;
+
+                case 'f':
+                  {
+                    LaTeX = true;
+                    Verbose = true;
+                    ++argcount;
+                    string s(argv[argcount]);
+                    s += ".tex";
+                    possibleLatexReport.open(s.c_str());
+                    report = &possibleLatexReport;
+                    ++argcount;
+                  };
+                  break;
 	    	default:
 	    		cout << "Unrecognised command line switch: " << argv[argcount] << "\n";
 	    		exit(-1);
